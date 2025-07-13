@@ -13,6 +13,9 @@ emergency_log = []
 @app.route('/')
 def home():
     return render_template('index.html')
+@app.route('/favicon.ico')
+def empty_favicon():
+    return '', 204  # Returns empty successful response
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
@@ -35,6 +38,7 @@ def emergency():
 
 def run_detector():
     detector.simulate_detection()
+    
 
 if __name__ == '__main__':
     threading.Thread(target=run_detector, daemon=True).start()
