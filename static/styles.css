@@ -1,0 +1,165 @@
+/* RADAR THEME */
+:root {
+    --radar-green: #00ff41;
+    --dark-bg: #0d0208;
+    --panel-bg: #1a1a2e;
+    --emergency-red: #ff0033;
+}
+
+body {
+    margin: 0;
+    background: var(--dark-bg);
+    color: white;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+}
+
+.radar-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* RADAR CIRCLE */
+.radar {
+    width: 60vw;
+    height: 100vh;
+    background: 
+        radial-gradient(circle at center, 
+            rgba(0, 255, 65, 0.1) 0%, 
+            transparent 70%);
+    position: relative;
+    border-right: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+/* RADAR SWEEP ANIMATION */
+.sweep {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: conic-gradient(
+        transparent 0deg 180deg,
+        rgba(0, 255, 65, 0.3) 180deg 360deg
+    );
+    border-radius: 50%;
+    animation: rotate 4s linear infinite;
+}
+
+/* DRONE BLIP */
+.blip {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--emergency-red);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 0 5px var(--emergency-red));
+}
+
+/* NODES */
+.node {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: var(--panel-bg);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--radar-green);
+    border: 2px solid var(--radar-green);
+}
+.n1 { top: 30%; left: 50%; }
+.n2 { top: 60%; left: 70%; }
+.n3 { top: 60%; left: 30%; }
+
+/* CONTROL PANEL */
+.control-panel {
+    width: 40vw;
+    padding: 20px;
+    background: var(--panel-bg);
+    display: flex;
+    flex-direction: column;
+}
+
+h1 {
+    color: var(--radar-green);
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* ALERT BOX */
+.alert {
+    background: rgba(255, 0, 51, 0.2);
+    border: 1px solid var(--emergency-red);
+    padding: 15px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+.alert i {
+    font-size: 2rem;
+    color: var(--emergency-red);
+}
+
+/* SIGNAL BARS */
+.signal-bars {
+    margin: 20px 0;
+}
+.bar-container {
+    margin: 15px 0;
+}
+.bar {
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+.fill {
+    height: 100%;
+    width: 0%;
+    transition: width 0.5s ease;
+    border-radius: 10px;
+}
+
+/* EMERGENCY BUTTON */
+button {
+    background: var(--emergency-red);
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px var(--emergency-red);
+}
+.pulse {
+    animation: pulse 2s infinite;
+}
+.emergency-active {
+    background: white;
+    color: var(--emergency-red);
+}
+
+/* ANIMATIONS */
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 51, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 0, 51, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 51, 0); }
+}
+.hidden { display: none; }

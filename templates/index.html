@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Village Drone Shield</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="radar-container">
+        <div class="radar">
+            <div class="sweep"></div>
+            <div id="droneBlip" class="blip hidden"></div>
+            <div class="node n1"><i class="fas fa-wifi"></i></div>
+            <div class="node n2"><i class="fas fa-wifi"></i></div>
+            <div class="node n3"><i class="fas fa-wifi"></i></div>
+        </div>
+        
+        <div class="control-panel">
+            <h1><i class="fas fa-shield-alt"></i> Village Drone Shield</h1>
+            
+            <div id="alertBox" class="alert hidden">
+                <i class="fas fa-drone"></i>
+                <div>
+                    <h2>DRONE DETECTED!</h2>
+                    <p id="distanceText">100m away</p>
+                </div>
+            </div>
+            
+            <div class="signal-bars">
+                <div class="bar-container">
+                    <span>Node 1</span>
+                    <div class="bar"><div id="bar1" class="fill"></div></div>
+                </div>
+                <div class="bar-container">
+                    <span>Node 2</span>
+                    <div class="bar"><div id="bar2" class="fill"></div></div>
+                </div>
+                <div class="bar-container">
+                    <span>Node 3</span>
+                    <div class="bar"><div id="bar3" class="fill"></div></div>
+                </div>
+            </div>
+            
+            <button id="emergencyBtn" class="pulse">
+                <i class="fas fa-siren-on"></i> ACTIVATE VILLAGE ALERT
+            </button>
+        </div>
+    </div>
+
+    <audio id="alarmSound" src="/static/alarm.mp3" preload="auto"></audio>
+    <audio id="sirenSound" src="/static/siren.mp3" preload="auto"></audio>
+
+    <script>
+        const alertBox = document.getElementById('alertBox');
+        const droneBlip = document.getElementById('droneBlip');
+        const distanceText = document.getElementById('distanceText');
+        const emergencyBtn = document.getElementById('emergencyBtn');
+        const alarmSound = document.getElementById('alarmSound');
+        const sirenSound = document.getElementById('sirenSound');
+        const bars = [document.getElementById('bar1'), document.getElementById('bar2'), document.getElementById('bar3')];
+
+        let lastAlertTime = null;
+
+        function updateUI(data) {
+            if (data.detected) {
+                // Show alert
+                alertBox.classList.remove('hidden');
+                distanceText.textContent = `${data.distance}m away`;
+                
+                // Position drone blip on radar
+                const angle = Math.atan2(
+                    data.location[1] - 77.2090, 
+                    data.location[0] - 28.6139
+                );
+                const distance = Math.min(90, data.distance / 5);
+                const x = 50 + distance * Math.cos(angle);
+                const y = 50 + distance * Math.sin(angle);
+                droneBlip.style.left = `${x}%`;
+                droneBlip.style.top = `${y}%`;
+                droneBlip.classList.remove('hidden');
+                
+                // Play alarm once per detection
+                if (!lastAlertTime || (Date.now() - lastAlertTime > 10000)) {
+                    alarmSound.play();
+                    lastAlertTime = Date.now();
+                }
+                
+                // Update signal bars
+                data.nodes.forEach((node, i) => {
+                    const strength = Math.max(0, Math.min(100, (node.last_rssi + 90) * 3.33));
+                    bars[i].style.width = `${strength}%`;
+                    bars[i].style.backgroundColor = 
+                        strength > 70 ? '#2ecc71' : strength > 30 ? '#f39c12' : '#e74c3c';
+                });
+            } else {
+                alertBox.classList.add('hidden');
+                droneBlip.classList.add('hidden');
+            }
+        }
+
+        emergencyBtn.addEventListener('click', () => {
+            sirenSound.play();
+            fetch('/emergency', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.siren) {
+                        emergencyBtn.classList.add('emergency-active');
+                        setTimeout(() => {
+                            emergencyBtn.classList.remove('emergency-active');
+                        }, 3000);
+                    }
+                });
+        });
+
+        setInterval(() => {
+            fetch('/status')
+                .then(res => res.json())
+                .then(updateUI)
+                .catch(() => console.log("Connection error"));
+        }, 2000);
+    </script>
+</body>
+</html>
