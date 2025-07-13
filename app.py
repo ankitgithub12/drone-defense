@@ -1,45 +1,31 @@
-from flask import Flask, render_template, jsonify, send_from_directory
-from flask_cors import CORS
+from flask import Flask, render_template, jsonify
 from detector import DroneDetector
 import threading
-from datetime import datetime
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-CORS(app)
 
+# Initialize detector
 detector = DroneDetector()
-emergency_log = []
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-@app.route('/favicon.ico')
-def empty_favicon():
-    return '', 204  # Returns empty successful response
-
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    mimetype = 'audio/mpeg' if filename.endswith('.mp3') else None
-    return send_from_directory(app.static_folder, filename, mimetype=mimetype)
+# Health check endpoint
+@app.route('/health')
+def health():
+    return 'OK', 200
 
 @app.route('/status')
 def status():
-    return jsonify(detector.get_status())
+    try:
+        return jsonify(detector.get_status())
+    except Exception as e:
+        print(f"Status error: {str(e)}")
+        return jsonify({"error": "Server error"}), 500
 
-@app.route('/emergency', methods=['POST'])
-def emergency():
-    timestamp = datetime.now().strftime("%H:%M:%S")
-    emergency_log.append(timestamp)
-    return jsonify({
-        "status": "success",
-        "message": f"Emergency alert sent at {timestamp}",
-        "siren": True
-    })
-
+# Start detection thread
 def run_detector():
     detector.simulate_detection()
-    
+
+threading.Thread(target=run_detector, daemon=True).start()
 
 if __name__ == '__main__':
-    threading.Thread(target=run_detector, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)
