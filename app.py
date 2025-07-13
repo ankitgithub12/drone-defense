@@ -1,27 +1,23 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
+from flask_cors import CORS
 from detector import DroneDetector
 import threading
 from datetime import datetime
-from flask import Flask, send_from_directory
-from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)  # Add this line
+app = Flask(__name__, static_folder='static', template_folder='templates')
+CORS(app)
 
-app = Flask(__name__)
-
-@app.route('/static/<path:path>')
-def serve_static(path):
-    return send_from_directory('static', path)
-
-app = Flask(__name__)
 detector = DroneDetector()
-
 emergency_log = []
 
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    mimetype = 'audio/mpeg' if filename.endswith('.mp3') else None
+    return send_from_directory(app.static_folder, filename, mimetype=mimetype)
 
 @app.route('/status')
 def status():

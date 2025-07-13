@@ -47,94 +47,71 @@
         </div>
     </div>
 
-    <audio id="alarmSound" src="/static/alarm.mp3" preload="auto"></audio>
-    <audio id="sirenSound" src="/static/siren.mp3" preload="auto"></audio>
-
     <script>
+        // Audio Setup
+        const alarmSound = new Audio('/static/alarm.mp3');
+        const sirenSound = new Audio('/static/siren.mp3');
+        
+        // Unlock audio on first interaction
+        document.addEventListener('click', () => {
+            alarmSound.play().catch(e => console.log("Audio init:", e));
+        }, { once: true });
+
+        // DOM Elements
         const alertBox = document.getElementById('alertBox');
         const droneBlip = document.getElementById('droneBlip');
         const distanceText = document.getElementById('distanceText');
         const emergencyBtn = document.getElementById('emergencyBtn');
-        const alarmSound = document.getElementById('alarmSound');
-        const sirenSound = document.getElementById('sirenSound');
         const bars = [document.getElementById('bar1'), document.getElementById('bar2'), document.getElementById('bar3')];
 
         let lastAlertTime = null;
 
         function updateUI(data) {
             if (data.detected) {
-                // Show alert
                 alertBox.classList.remove('hidden');
                 distanceText.textContent = `${data.distance}m away`;
                 
-                // Position drone blip on radar
-                const angle = Math.atan2(
-                    data.location[1] - 77.2090, 
-                    data.location[0] - 28.6139
-                );
+                const angle = Math.atan2(data.location[1] - 77.2090, data.location[0] - 28.6139);
                 const distance = Math.min(90, data.distance / 5);
-                const x = 50 + distance * Math.cos(angle);
-                const y = 50 + distance * Math.sin(angle);
-                droneBlip.style.left = `${x}%`;
-                droneBlip.style.top = `${y}%`;
+                droneBlip.style.left = `${50 + distance * Math.cos(angle)}%`;
+                droneBlip.style.top = `${50 + distance * Math.sin(angle)}%`;
                 droneBlip.classList.remove('hidden');
-                
-                // Play alarm once per detection
-                if (!lastAlertTime || (Date.now() - lastAlertTime > 10000)) {
-                    alarmSound.play();
+
+                if (!lastAlertTime) {
+                    alarmSound.currentTime = 0;
+                    alarmSound.play().catch(e => console.log("Play failed:", e));
                     lastAlertTime = Date.now();
                 }
-                
-                // Update signal bars
+
                 data.nodes.forEach((node, i) => {
                     const strength = Math.max(0, Math.min(100, (node.last_rssi + 90) * 3.33));
                     bars[i].style.width = `${strength}%`;
-                    bars[i].style.backgroundColor = 
-                        strength > 70 ? '#2ecc71' : strength > 30 ? '#f39c12' : '#e74c3c';
+                    bars[i].style.backgroundColor = strength > 70 ? '#2ecc71' : strength > 30 ? '#f39c12' : '#e74c3c';
                 });
             } else {
                 alertBox.classList.add('hidden');
                 droneBlip.classList.add('hidden');
+                lastAlertTime = null;
             }
         }
-        // Unlock browser audio
-document.addEventListener('click', () => {
-  new Audio('/static/alarm.mp3').play().catch(e => console.log(e));
-});
-// Preload audio
-alarmSound.src = "/static/alarm.mp3";
 
-// Play only after user interaction
-document.body.addEventListener('click', () => {
-  alarmSound.play().catch(e => console.log("Audio error:", e));
-});
-
-// Then use this in your detection logic
         emergencyBtn.addEventListener('click', () => {
+            sirenSound.currentTime = 0;
             sirenSound.play();
-            fetch('/emergency', { method: 'POST' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.siren) {
-                        emergencyBtn.classList.add('emergency-active');
-                        setTimeout(() => {
-                            emergencyBtn.classList.remove('emergency-active');
-                        }, 3000);
-                    }
-                });
+            fetch('/emergency', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(res => {
+                if (res.ok) {
+                    emergencyBtn.classList.add('emergency-active');
+                    setTimeout(() => emergencyBtn.classList.remove('emergency-active'), 3000);
+                }
+            });
         });
-        fetch('/status', {
-  headers: { 'Content-Type': 'application/json' },
-  mode: 'same-origin'  // Critical for Render
-})
-.then(response => {
-  if (!response.ok) throw new Error('Network error');
-  return response.json();
-})
 
         setInterval(() => {
             fetch('/status')
-                .then(res => res.json())
+                .then(res => res.ok ? res.json() : Promise.reject())
                 .then(updateUI)
                 .catch(() => console.log("Connection error"));
         }, 2000);
