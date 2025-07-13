@@ -3,6 +3,10 @@ from detector import DroneDetector
 import threading
 from datetime import datetime
 from flask import Flask, send_from_directory
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)  # Add this line
 
 app = Flask(__name__)
 

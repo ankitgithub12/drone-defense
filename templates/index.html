@@ -123,6 +123,14 @@ document.body.addEventListener('click', () => {
                     }
                 });
         });
+        fetch('/status', {
+  headers: { 'Content-Type': 'application/json' },
+  mode: 'same-origin'  // Critical for Render
+})
+.then(response => {
+  if (!response.ok) throw new Error('Network error');
+  return response.json();
+})
 
         setInterval(() => {
             fetch('/status')
