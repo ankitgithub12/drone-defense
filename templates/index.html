@@ -101,6 +101,15 @@
 document.addEventListener('click', () => {
   new Audio('/static/alarm.mp3').play().catch(e => console.log(e));
 });
+// Preload audio
+alarmSound.src = "/static/alarm.mp3";
+
+// Play only after user interaction
+document.body.addEventListener('click', () => {
+  alarmSound.play().catch(e => console.log("Audio error:", e));
+});
+
+// Then use this in your detection logic
         emergencyBtn.addEventListener('click', () => {
             sirenSound.play();
             fetch('/emergency', { method: 'POST' })
