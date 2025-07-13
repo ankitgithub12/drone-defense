@@ -97,7 +97,10 @@
                 droneBlip.classList.add('hidden');
             }
         }
-
+        // Unlock browser audio
+document.addEventListener('click', () => {
+  new Audio('/static/alarm.mp3').play().catch(e => console.log(e));
+});
         emergencyBtn.addEventListener('click', () => {
             sirenSound.play();
             fetch('/emergency', { method: 'POST' })
