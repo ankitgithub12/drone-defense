@@ -1,13 +1,13 @@
-from flask import Flask, render_template, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, render_template
 from detector import DroneDetector
 import threading
+import time
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # Initialize detector
 detector = DroneDetector()
-emergency_log = []
 
 @app.route('/')
 def home():
@@ -19,33 +19,26 @@ def serve_static(path):
 
 @app.route('/status')
 def status():
-    try:
-        return jsonify(detector.get_status())
-    except Exception as e:
-        print(f"Status error: {str(e)}")
-        return jsonify({"error": "Server error"}), 500
+    return jsonify(detector.get_status())
 
 @app.route('/emergency', methods=['POST'])
 def emergency():
     timestamp = datetime.now().strftime("%H:%M:%S")
-    emergency_log.append(timestamp)
     return jsonify({
         "status": "success",
-        "message": f"Emergency alert sent at {timestamp}",
+        "message": f"Emergency alert at {timestamp}",
         "siren": True
     })
-
-@app.route('/favicon.ico')
-def favicon():
-    return '', 204
 
 @app.route('/health')
 def health():
     return 'OK', 200
 
-def run_detector():
-    detector.simulate_detection()
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 if __name__ == '__main__':
-    threading.Thread(target=run_detector, daemon=True).start()
+    # Start detection thread
+    threading.Thread(target=detector.simulate_detection, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)

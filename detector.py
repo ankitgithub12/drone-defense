@@ -1,12 +1,13 @@
 import time
-from datetime import datetime
 import random
 import math
+import threading
+from datetime import datetime
 
 class DroneDetector:
     def __init__(self):
         self.detected = False
-        self.location = (28.6139, 77.2090)  # Default coordinates (Delhi)
+        self.location = (28.6139, 77.2090)
         self.distance = 0
         self.last_detection = None
         self.nodes = [
@@ -14,6 +15,9 @@ class DroneDetector:
             {"id": 2, "lat": 28.6145, "lon": 77.2102, "last_rssi": -90},
             {"id": 3, "lat": 28.6122, "lon": 77.2078, "last_rssi": -90}
         ]
+        self._status_cache = None
+        self._cache_lock = threading.Lock()
+        self._cache_timeout = 1  # seconds
 
     def simulate_detection(self):
         while True:
@@ -28,7 +32,7 @@ class DroneDetector:
                     28.6139 + offset * math.cos(angle),
                     77.2090 + offset * math.sin(angle)
                 )
-
+                
                 for node in self.nodes:
                     dist = 1000 * math.sqrt(
                         (node['lat']-self.location[0])**2 + 
@@ -40,13 +44,19 @@ class DroneDetector:
             else:
                 self.detected = False
             
-            time.sleep(2)
+            time.sleep(10)  # Check every 10 seconds
 
     def get_status(self):
-        return {
-            "detected": self.detected,
-            "location": self.location,
-            "distance": self.distance,
-            "time": self.last_detection,
-            "nodes": self.nodes
-        }
+        with self._cache_lock:
+            current_time = time.time()
+            if (not self._status_cache or 
+                current_time - self._status_cache['timestamp'] > self._cache_timeout):
+                self._status_cache = {
+                    "detected": self.detected,
+                    "location": self.location,
+                    "distance": self.distance,
+                    "time": self.last_detection,
+                    "nodes": self.nodes,
+                    "timestamp": current_time
+                }
+            return self._status_cache.copy()
